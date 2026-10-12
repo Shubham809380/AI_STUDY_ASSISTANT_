@@ -1,0 +1,79 @@
+{
+  "results": [
+    {
+      "topic": "Artificial Intelligence",
+      "learner_level": "Beginner",
+      "status": "valid",
+      "attempts": 1,
+      "issues": [],
+      "message": "",
+      "stats": {
+        "important_points": 5,
+        "practice_questions": 5,
+        "mcqs": 5,
+        "mcqs_complete": true
+      },
+      "text_preview": "## Explanation\nArtificial Intelligence is a broad field of computer science focused on creating systems that can perform tasks which typically require human intelligence. These tasks include problem-s"
+    },
+    {
+      "topic": "Cloud Computing",
+      "learner_level": "Intermediate",
+      "status": "valid",
+      "attempts": 1,
+      "issues": [],
+      "message": "",
+      "stats": {
+        "important_points": 5,
+        "practice_questions": 5,
+        "mcqs": 5,
+        "mcqs_complete": true
+      },
+      "text_preview": "## Explanation\nCloud Computing is the on-demand delivery of computing services over the internet, ranging from data storage and servers to databases, networking, and software. Instead of owning and ma"
+    },
+    {
+      "topic": "Data Analytics",
+      "learner_level": "Intermediate",
+      "status": "valid",
+      "attempts": 1,
+      "issues": [],
+      "message": "",
+      "stats": {
+        "important_points": 5,
+        "practice_questions": 5,
+        "mcqs": 5,
+        "mcqs_complete": true
+      },
+      "text_preview": "## Explanation\nData analytics is the systematic process of inspecting, cleansing, transforming, and modeling data to discover useful information, draw conclusions, and support decision-making. To navi"
+    },
+    {
+      "topic": "Cybersecurity",
+      "learner_level": "Advanced",
+      "status": "valid",
+      "attempts": 1,
+      "issues": [],
+      "message": "",
+      "stats": {
+        "important_points": 5,
+        "practice_questions": 5,
+        "mcqs": 5,
+        "mcqs_complete": true
+      },
+      "text_preview": "## Explanation\nAdvanced cybersecurity engineering requires moving beyond perimeter-centric defense models toward robust frameworks like Zero Trust Architecture (ZTA) and modern cryptographic protocols"
+    },
+    {
+      "topic": "Web Development",
+      "learner_level": "Beginner",
+      "status": "valid",
+      "attempts": 1,
+      "issues": [],
+      "message": "",
+      "stats": {
+        "important_points": 5,
+        "practice_questions": 5,
+        "mcqs": 5,
+        "mcqs_complete": true
+      },
+      "text_preview": "## Explanation\nWeb development is the process of building and maintaining websites and web applications that run online on a browser. At a beginner level, it is helpful to think of web development as "
+    }
+  ]
+}
