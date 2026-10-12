@@ -7,8 +7,33 @@ from google.genai import errors, types
 
 load_dotenv()
 
-# Model can be overridden via the GEMINI_MODEL environment variable.
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
+
+def _read_secret(name: str):
+    """Return a config value from the environment, `.env` or Streamlit secrets.
+
+    Environment variables (including a local ``.env``) take precedence, then
+    Streamlit Community Cloud secrets are checked. This lets the same code run
+    locally (via ``.env``) and on Streamlit Cloud (via the Secrets manager)
+    without changes.
+    """
+    value = os.getenv(name)
+
+    if value:
+        return value
+
+    try:
+        import streamlit as st
+
+        if name in st.secrets:
+            return st.secrets[name]
+    except Exception:  # noqa: BLE001 - secrets may be absent/out of context
+        return None
+
+    return None
+
+
+# Model can be overridden via the GEMINI_MODEL environment variable or secret.
+MODEL_NAME = _read_secret("GEMINI_MODEL") or "gemini-flash-lite-latest"
 
 # Hard timeout (milliseconds) so a stuck request never hangs the UI forever.
 REQUEST_TIMEOUT_MS = 60000
@@ -17,16 +42,17 @@ REQUEST_TIMEOUT_MS = 60000
 def get_client():
     """
     Create and return a Gemini client only when an API key is available.
-    This prevents the whole Streamlit app from crashing when .env is absent.
+    This prevents the whole Streamlit app from crashing when no key is set.
     """
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = _read_secret("GEMINI_API_KEY")
 
     if not api_key:
         raise RuntimeError(
-            "Gemini API key is not configured. "
-            "Create a local .env file and add "
-            "GEMINI_API_KEY=YOUR_GEMINI_API_KEY"
+            "Gemini API key is not configured. Locally, create a .env file and "
+            "add GEMINI_API_KEY=YOUR_GEMINI_API_KEY. On Streamlit Community "
+            "Cloud, add it in 'Manage app' -> Settings -> Secrets as "
+            'GEMINI_API_KEY = "your_key".'
         )
 
     return genai.Client(
@@ -51,7 +77,8 @@ def _friendly_error(error: errors.APIError) -> str:
     if code in (401, 403):
         return (
             "Gemini API key is invalid or not authorized (HTTP "
-            f"{code}). Check GEMINI_API_KEY in your .env file. Details: {message}"
+            f"{code}). Check GEMINI_API_KEY in your .env file or Streamlit "
+            f"secrets. Details: {message}"
         )
     if code and 500 <= code < 600:
         return (
