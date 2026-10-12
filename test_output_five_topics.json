@@ -13,7 +13,7 @@
         "mcqs": 5,
         "mcqs_complete": true
       },
-      "text_preview": "## Explanation\nArtificial Intelligence is a broad field of computer science focused on creating systems that can perform tasks which typically require human intelligence. These tasks include problem-s"
+      "text_preview": "## Explanation\nArtificial Intelligence is a broad field of computer science focused on creating systems capable of performing tasks that typically require human intellect. These tasks include problem-"
     },
     {
       "topic": "Cloud Computing",
@@ -28,7 +28,7 @@
         "mcqs": 5,
         "mcqs_complete": true
       },
-      "text_preview": "## Explanation\nCloud Computing is the on-demand delivery of computing services over the internet, ranging from data storage and servers to databases, networking, and software. Instead of owning and ma"
+      "text_preview": "## Explanation\nCloud Computing is the on-demand delivery of computing services\u2014including data storage, servers, databases, networking, and software\u2014over the internet on a pay-as-you-go basis. Instead "
     },
     {
       "topic": "Data Analytics",
@@ -58,7 +58,7 @@
         "mcqs": 5,
         "mcqs_complete": true
       },
-      "text_preview": "## Explanation\nAdvanced cybersecurity engineering requires moving beyond perimeter-centric defense models toward robust frameworks like Zero Trust Architecture (ZTA) and modern cryptographic protocols"
+      "text_preview": "## Explanation\nIn modern advanced cybersecurity, achieving robust defense-in-depth requires architectural frameworks like Zero Trust Architecture (ZTA) and secure cryptographic protocols such as Trans"
     },
     {
       "topic": "Web Development",
@@ -73,7 +73,7 @@
         "mcqs": 5,
         "mcqs_complete": true
       },
-      "text_preview": "## Explanation\nWeb development is the process of building and maintaining websites and web applications that run online on a browser. At a beginner level, it is helpful to think of web development as "
+      "text_preview": "## Explanation\nWeb development is the process of building and maintaining websites and web applications that run on the internet. At its core, web development is divided into three main languages used"
     }
   ]
 }

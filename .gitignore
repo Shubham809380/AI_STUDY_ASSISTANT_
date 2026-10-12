@@ -1,12 +1,10 @@
 .venv/
 venv/
 .env
-__pycache__/
-.pytest_cache/
-*.pyc
-*.db
-.ipynb_checkpoints/
-.env
 .env.*
 !.env.example
-__pycache__/.n.pytest_cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+.ipynb_checkpoints/

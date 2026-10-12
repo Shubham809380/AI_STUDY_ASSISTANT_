@@ -14,11 +14,15 @@ The application combines Python, Streamlit, SQLite, Jupyter Notebook, and a Gemi
 * Structured output validation (five mandatory sections, exactly 5 important points, 5 practice questions and 5 MCQs)
 * Bounded regeneration with corrective feedback (invalid output is never silently accepted)
 * Safe terminology / formatting cleanup (headings, spelling, stray artifacts)
+* Non-blocking quality suggestions (overclaim / overgeneralization warnings)
+* MCQ display formatting (each option on its own line)
 * Friendly API error handling (quota, auth and network errors)
 * Quiz scoring and result storage
 * Progress tracking
 * Study session tracking
-* Study history
+* Study streak tracking (consecutive calendar days)
+* Add subjects directly from the Study Session page
+* Study history with subject-based filtering and deletion
 * SQL-based data storage
 * Automated pytest test suite
 * Jupyter Notebook based data analysis and LLM experimentation
@@ -49,7 +53,8 @@ AI_STUDY_ASSISTANT_SUBMISSION/
 │   ├── llm_service.py
 │   ├── notes_service.py
 │   ├── quiz_service.py
-│   └── output_validator.py
+│   ├── output_validator.py
+│   └── display_utils.py
 │
 ├── scripts/
 │   └── retest_five_topics.py
@@ -60,7 +65,9 @@ AI_STUDY_ASSISTANT_SUBMISSION/
 │   ├── test_database.py
 │   ├── test_notes_service.py
 │   ├── test_output_validator.py
-│   └── test_quiz_service.py
+│   ├── test_quiz_service.py
+│   ├── test_study_sessions.py
+│   └── test_subjects.py
 │
 ├── notebooks/
 │   └── 01_llm_experiments.ipynb
@@ -77,6 +84,31 @@ AI_STUDY_ASSISTANT_SUBMISSION/
 `services/output_validator.py` holds the structure validators, per-MCQ validation,
 duplicate detection and safe terminology / formatting cleanup used by the notes
 and quiz services.
+
+`services/display_utils.py` holds the small pure helpers used by the Streamlit UI
+(study-session and subject validation, topic trimming, subject capitalization,
+timestamp formatting and subject filtering) so they run unit-testable without
+Streamlit.
+
+Study sessions support validation, a current study streak (consecutive calendar
+days ending today or yesterday) and a deletable, filterable history.  Subjects
+can be added directly from the Study Session page.
+
+### Study Session & Progress
+
+* **Add subject** — a subject can be added straight from the Study Session page.
+  The form validates that the name is non-empty, at most 50 characters and not a
+  duplicate (case-insensitive). When the user has no subjects yet, the form is
+  shown inline; otherwise it lives in a collapsed `➕ Add new subject` expander.
+* **Save session** — the topic must be non-empty (trimmed and capped at 100
+  characters) and the duration must be 1–600 minutes. After a successful save the
+  topic input is cleared and a success message is shown.
+* **Study streak** — counts consecutive calendar days with at least one session,
+  ending today (or yesterday). Same-day sessions count once; no sessions = 0.
+* **Study history** — sessions are listed newest-first with the topic capitalized
+  for display (stored unchanged) and a readable timestamp. History can be filtered
+  by subject (with matching totals) and individual sessions can be deleted after
+  confirmation.
 
 ## 5. Installation
 
@@ -200,15 +232,17 @@ Run it from the project root:
 python -m pytest tests -q
 ```
 
-Result: **49 passed, 0 failed**.
+Result: **147 passed, 0 failed**.
 
 Coverage includes the structure / MCQ / quiz-data validators, terminology and
-artifact cleanup, notes generation and regeneration behaviour, quiz generation
-with bounded retries, and the database layer.
+artifact cleanup, overclaim warnings, notes and quiz generation and regeneration
+behaviour, MCQ display formatting, the database layer, study-session validation
+and streak logic, study-history display helpers (timestamp formatting, topic
+capitalization, subject filtering, deletion) and add-subject behaviour.
 
 The five required topic/level combinations were also regenerated against the
 live Gemini API (`scripts/retest_five_topics.py`); all five passed validation on
-the first attempt. The machine-readable report is in
+the first attempt (1 attempt each). The machine-readable report is in
 `test_output_five_topics.json`.
 
 Additional manual testing documentation is available in:
@@ -233,13 +267,26 @@ AI-generated information should be verified before being used as factual or acad
 
 ## 13. Submission Contents
 
-The submission package should contain the project source code, configuration template, documentation, testing documentation, and Jupyter notebook.
+The submission package (`AI_STUDY_ASSISTANT_SUBMISSION.zip`) contains a single
+top-level folder named `AI_STUDY_ASSISTANT_SUBMISSION/` with:
 
-The following should not be included in the submission:
+* `app.py` — the Streamlit application
+* `database/` — `database.py` and `schema.sql`
+* `services/` — `llm_service.py`, `notes_service.py`, `quiz_service.py`,
+  `output_validator.py`, `display_utils.py`
+* `scripts/` — `retest_five_topics.py`
+* `tests/` — the full pytest suite (`test_*.py`, `conftest.py`, `testdata.py`)
+* `notebooks/` — `01_llm_experiments.ipynb`
+* `README.md`, `TESTING.md`, `requirements.txt`, `.gitignore`, `.env.example`
+* `test_output_five_topics.json` — machine-readable retest report
+
+The following are NOT included in the submission:
 
 * `.env`
 * Private API keys
 * `.venv`
 * `venv`
 * `__pycache__`
-* Local SQLite database files
+* `.pytest_cache`
+* `.git`
+* Local SQLite database files (`*.db`)

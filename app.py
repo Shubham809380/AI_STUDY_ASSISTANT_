@@ -3,6 +3,7 @@ import streamlit as st
 from database.database import (
     initialize_database,
     get_subjects,
+    add_subject,
     create_quiz,
     save_quiz_question,
     save_quiz_result,
@@ -13,7 +14,20 @@ from database.database import (
     get_total_study_sessions,
     get_total_study_minutes,
     add_study_session,
-    get_study_sessions
+    get_study_sessions,
+    get_study_streak,
+    delete_study_session
+)
+from services.display_utils import (
+    capitalize_topic,
+    filter_study_sessions,
+    format_timestamp,
+    normalize_study_topic,
+    normalize_subject_name,
+    session_subject_label,
+    study_session_subjects,
+    validate_study_session_input,
+    validate_subject_name
 )
 from services.llm_service import ask_llm
 
@@ -418,6 +432,50 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 )
 # Temporary demo user
 USER_ID = 1
+
+
+def render_add_subject_form(subjects, key_prefix):
+    """Render an inline add-subject form (text input + Add Subject button)."""
+    existing_names = [
+        subject["subject_name"]
+        for subject in subjects
+    ]
+
+    subject_name = st.text_input(
+        "📚 New Subject Name",
+        placeholder="Example: Mathematics",
+        key=f"{key_prefix}_name"
+    )
+
+    if st.button(
+        "➕ Add Subject",
+        key=f"{key_prefix}_button",
+        use_container_width=True
+    ):
+
+        error_message = validate_subject_name(
+            subject_name,
+            existing_names
+        )
+
+        if error_message:
+
+            st.warning(error_message)
+
+        else:
+
+            cleaned_name = normalize_subject_name(subject_name)
+
+            add_subject(
+                USER_ID,
+                cleaned_name
+            )
+
+            st.success(
+                f"Subject '{cleaned_name}' added."
+            )
+
+            st.rerun()
 
 
 # Sidebar
@@ -1248,66 +1306,142 @@ elif page == "🕒 Study History":
     if not sessions:
 
         st.info(
-            "No study sessions found yet."
+            "No study sessions yet."
         )
 
     else:
 
-        total_history_minutes = sum(
-            session["duration_minutes"]
-            for session in sessions
+        subject_filter = st.selectbox(
+            "📚 Filter by Subject",
+            ["All"] + study_session_subjects(sessions),
+            key="history_subject_filter"
         )
 
-        history_col1, history_col2 = st.columns(2)
+        filtered_sessions = filter_study_sessions(
+            sessions,
+            subject_filter
+        )
 
-        with history_col1:
-            st.metric(
-                "📚 Sessions Recorded",
-                len(sessions)
+        if not filtered_sessions:
+
+            st.info(
+                "No study sessions found for this subject."
             )
 
-        with history_col2:
-            st.metric(
-                "⌛ Total Study Time",
-                f"{total_history_minutes} min"
+        else:
+
+            total_history_minutes = sum(
+                session["duration_minutes"]
+                for session in filtered_sessions
             )
 
-        st.divider()
+            history_col1, history_col2 = st.columns(2)
 
-        st.subheader("🗓️ Recent Activity")
-
-        for session in sessions:
-
-            subject_name = (
-                session["subject_name"]
-                if session["subject_name"]
-                else "No Subject"
-            )
-
-            with st.container(border=True):
-
-                top_col1, top_col2 = st.columns(
-                    [3, 1]
+            with history_col1:
+                st.metric(
+                    "📚 Sessions Recorded",
+                    len(filtered_sessions)
                 )
 
-                with top_col1:
-                    st.markdown(
-                        f"### 📘 {subject_name}"
-                    )
-
-                    st.write(
-                        f"**Topic:** {session['topic']}"
-                    )
-
-                with top_col2:
-                    st.metric(
-                        "Duration",
-                        f"{session['duration_minutes']} min"
-                    )
-
-                st.caption(
-                    f"🕒 {session['session_date']}"
+            with history_col2:
+                st.metric(
+                    "⌛ Total Study Time",
+                    f"{total_history_minutes} min"
                 )
+
+            st.divider()
+
+            st.subheader("🗓️ Recent Activity")
+
+            for session in filtered_sessions:
+
+                subject_label = session_subject_label(
+                    session["subject_name"]
+                )
+
+                topic = session["topic"]
+                topic_label = (
+                    capitalize_topic(topic)
+                    if topic
+                    else "No topic"
+                )
+
+                with st.container(border=True):
+
+                    top_col1, top_col2 = st.columns(
+                        [3, 1]
+                    )
+
+                    with top_col1:
+                        st.markdown(
+                            f"### 📘 {subject_label}"
+                        )
+
+                        st.write(
+                            f"**Topic:** {topic_label}"
+                        )
+
+                    with top_col2:
+                        st.metric(
+                            "Duration",
+                            f"{session['duration_minutes']} min"
+                        )
+
+                    st.caption(
+                        f"🕒 {format_timestamp(session['session_date'])}"
+                    )
+
+                    if (
+                        st.session_state.get("pending_delete")
+                        == session["session_id"]
+                    ):
+
+                        st.warning(
+                            "Are you sure you want to delete this session?"
+                        )
+
+                        confirm_col1, confirm_col2 = st.columns(2)
+
+                        with confirm_col1:
+
+                            if st.button(
+                                "Yes, delete",
+                                key=f"confirm_delete_{session['session_id']}"
+                            ):
+
+                                delete_study_session(
+                                    session["session_id"]
+                                )
+
+                                st.session_state["pending_delete"] = None
+
+                                st.success(
+                                    "Study session deleted."
+                                )
+
+                                st.rerun()
+
+                        with confirm_col2:
+
+                            if st.button(
+                                "Cancel",
+                                key=f"cancel_delete_{session['session_id']}"
+                            ):
+
+                                st.session_state["pending_delete"] = None
+
+                                st.rerun()
+
+                    else:
+
+                        if st.button(
+                            "🗑️ Delete",
+                            key=f"delete_{session['session_id']}"
+                        ):
+
+                            st.session_state["pending_delete"] = (
+                                session["session_id"]
+                            )
 
 
 # ============================================================
@@ -1325,6 +1459,14 @@ elif page == "⏱️ Study Session":
         """
     )
 
+    streak = get_study_streak(USER_ID)
+    streak_label = "day" if streak == 1 else "days"
+
+    st.metric(
+        "🔥 Current Streak",
+        f"{streak} {streak_label}"
+    )
+
     subjects = get_subjects(USER_ID)
 
     subject_options = {
@@ -1333,6 +1475,17 @@ elif page == "⏱️ Study Session":
     }
 
     if subject_options:
+
+        if st.session_state.pop("reset_study_topic", False):
+            st.session_state["study_topic_input"] = ""
+
+        flash_message = st.session_state.pop("study_session_flash", None)
+
+        if flash_message:
+
+            st.success(flash_message)
+
+            st.balloons()
 
         col1, col2 = st.columns(2)
 
@@ -1353,7 +1506,8 @@ elif page == "⏱️ Study Session":
 
         topic = st.text_input(
             "📖 Topic Studied",
-            placeholder="Example: Python Functions"
+            placeholder="Example: Python Functions",
+            key="study_topic_input"
         )
 
         st.markdown("###")
@@ -1364,29 +1518,45 @@ elif page == "⏱️ Study Session":
             use_container_width=True
         ):
 
-            if not topic.strip():
+            validation_message = validate_study_session_input(
+                topic,
+                duration
+            )
 
-                st.warning(
-                    "Please enter the topic you studied."
-                )
+            if validation_message:
+
+                st.warning(validation_message)
 
             else:
 
-                session_id = add_study_session(
+                clean_topic = normalize_study_topic(topic)
+
+                add_study_session(
                     user_id=USER_ID,
                     subject_id=subject_options[selected_subject],
-                    topic=topic,
+                    topic=clean_topic,
                     duration_minutes=duration
                 )
 
-                st.success(
-                    f"Study session saved successfully! Session ID: {session_id}"
-                )
+                st.session_state["study_session_flash"] = "Study session saved."
+                st.session_state["reset_study_topic"] = True
 
-                st.balloons()
+                st.rerun()
+
+        with st.expander("➕ Add new subject"):
+
+            render_add_subject_form(
+                subjects,
+                key_prefix="add_subject_expander"
+            )
 
     else:
 
-        st.info(
-            "No subjects available. Please add a subject first."
+        st.markdown(
+            "##### 📚 Start by adding your first subject."
+        )
+
+        render_add_subject_form(
+            subjects,
+            key_prefix="add_subject_inline"
         )

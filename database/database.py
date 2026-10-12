@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
@@ -467,7 +468,7 @@ def get_study_sessions(user_id):
         LEFT JOIN subjects
             ON study_sessions.subject_id = subjects.subject_id
         WHERE study_sessions.user_id = ?
-        ORDER BY study_sessions.session_date DESC
+        ORDER BY study_sessions.session_date DESC, study_sessions.session_id DESC
         """,
         (user_id,)
     ).fetchall()
@@ -475,6 +476,85 @@ def get_study_sessions(user_id):
     connection.close()
 
     return sessions
+
+
+def delete_study_session(session_id):
+    """Delete one study session by id, returning the number of rows deleted."""
+    connection = get_connection()
+
+    cursor = connection.execute(
+        """
+        DELETE FROM study_sessions
+        WHERE session_id = ?
+        """,
+        (session_id,)
+    )
+
+    connection.commit()
+
+    rows_deleted = cursor.rowcount
+
+    connection.close()
+
+    return rows_deleted
+
+
+def compute_study_streak(dates, today):
+    """Return the consecutive-day study streak ending today (or yesterday).
+
+    ``dates`` is an iterable of ``datetime.date`` study days.  The streak
+    anchors on ``today`` (falling back to yesterday when today has no
+    session) and walks backwards while each previous day is present.
+    """
+    study_dates = {d for d in dates}
+
+    if not study_dates:
+        return 0
+
+    anchor = today if today in study_dates else today - timedelta(days=1)
+
+    if anchor not in study_dates:
+        return 0
+
+    streak = 0
+    cursor = anchor
+
+    while cursor in study_dates:
+        streak += 1
+        cursor -= timedelta(days=1)
+
+    return streak
+
+
+def get_study_streak(user_id, today=None):
+    """Return the user's consecutive-day study streak as an integer.
+
+    ``today`` may be injected for testing; it defaults to the real date.
+    Duplicate sessions on the same day are counted once.  No sessions
+    means a streak of 0.
+    """
+    connection = get_connection()
+
+    rows = connection.execute(
+        """
+        SELECT DISTINCT date(session_date) AS study_date
+        FROM study_sessions
+        WHERE user_id = ?
+        """,
+        (user_id,)
+    ).fetchall()
+
+    connection.close()
+
+    study_dates = [
+        datetime.strptime(str(row["study_date"]), "%Y-%m-%d").date()
+        for row in rows
+        if row["study_date"]
+    ]
+
+    reference = today or date.today()
+
+    return compute_study_streak(study_dates, reference)
 
 if __name__ == "__main__":
     initialize_database()

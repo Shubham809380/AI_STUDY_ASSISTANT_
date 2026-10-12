@@ -14,7 +14,7 @@ Run it from the project root:
 python -m pytest tests -q
 ```
 
-Result: **91 passed, 0 failed**
+Result: **147 passed, 0 failed**
 
 Coverage:
 
@@ -30,6 +30,21 @@ Coverage:
 | MCQ display formatting | `tests/test_notes_service.py` | `format_study_mcqs_for_display` renders each option on its own line (`- A.` – `- D.`), keeps the question text and `Correct Answer` lines, preserves the other four sections, and keeps the verification notice exactly once |
 | Quiz service | `tests/test_quiz_service.py` | Valid quizzes returned; invalid/Malformed JSON regenerates until valid; retries are bounded and raise `ValueError`; wrong question count regenerates |
 | Database layer | `tests/test_database.py` | Initialization, subjects, notes, quizzes, quiz questions, result storage, study sessions (uses a temporary SQLite file) |
+| Study session & streak | `tests/test_study_sessions.py` | Valid save stores subject/duration/topic; empty/whitespace topic and duration 0/negative/601 rejected; topic trimmed and capped at 100 chars; streak rules (none = 0, today = 1, today + yesterday = 2, gap breaks the streak, yesterday only = 1, same-day duplicates count once); timestamp formatter for valid and invalid values; topic capitalization; subject filter count and total minutes; newest-first ordering; delete removes only the chosen id and a missing id is safe |
+| Add-subject validation | `tests/test_subjects.py` | Valid add stored; empty/whitespace, over-50-char and case-insensitive-duplicate names rejected; SQL-injection subject stored as plain text and the table still works |
+
+## 1b. Fixes Applied in the Final Polish Pass
+
+Short list of the fixes that the automated suite above now locks in:
+
+* **MCQ question validation** — an empty question statement or fewer than four options is rejected.
+* **Terminology cleanup** — IaaS/PaaS/SaaS and TLS 1.3/Zero Trust Architecture capitalization, `A.I.`/`a.i.`/`Ai` → AI, malformed `## ## Heading` normalization, stray `c2` removal; repair is idempotent and words merely containing "ai" are untouched.
+* **Overclaim warnings** — non-blocking quality suggestions for absolute/AI-overclaim phrases; warnings never fail validation.
+* **MCQ display formatting** — each option is rendered on its own line (`- A.` – `- D.`) in the app.
+* **Study session validation** — empty/whitespace topic rejected, duration must be 1–600 minutes, topic trimmed and capped at 100 characters, success message shown and topic input cleared after save.
+* **Study streak** — consecutive calendar days ending today (or yesterday), no sessions = 0, same-day duplicates count once.
+* **Study history polish** — newest-first ordering, readable timestamp with safe fallback, topic capitalized for display only, subject filter with matching totals, delete-with-confirmation.
+* **Add-subject form** — inline form when no subjects exist (and a collapsed expander otherwise), trimmed/non-empty/max-50/case-insensitive-duplicate validation.
 
 ## 2. Functional Test Cases
 
